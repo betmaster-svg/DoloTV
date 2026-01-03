@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoloTV | By Larra</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #e50914; /* Rojo estilo Netflix */
+            --bg-dark: #0f0f0f;
+            --card-bg: #1f1f1f;
+            --text-main: #ffffff;
+            --accent: #007bff;
+        }
+
+        body { 
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+            background: var(--bg-dark); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding-bottom: 100px;
+        }
+
+        /* Encabezado Estilo Premium */
+        header { 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 100%);
+            padding: 30px 20px; 
+            text-align: center; 
+        }
+
+        h1 { 
+            font-size: 3rem; 
+            margin: 0; 
+            color: var(--primary); 
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .subtitle { font-size: 1rem; color: #888; margin-bottom: 20px; }
+
+        .controls { margin-top: 20px; }
+        .btn-country { 
+            background: rgba(255,255,255,0.1); 
+            color: white; 
+            border: 1px solid rgba(255,255,255,0.3); 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            margin: 5px; 
+            transition: all 0.3s;
+        }
+        .btn-country:hover { background: var(--primary); border-color: var(--primary); }
+
+        /* Contenedor del Reproductor */
+        #player-section { 
+            position: sticky; 
+            top: 0; 
+            background: var(--bg-dark); 
+            padding: 15px; 
+            z-index: 1000; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+        .video-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            border: 3px solid #333;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #000;
+        }
+        video { width: 100%; display: block; aspect-ratio: 16/9; }
+
+        #status { margin-top: 15px; font-weight: 300; color: #aaa; text-align: center; }
+
+        /* Grid de Canales */
+        .container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+            gap: 20px; 
+            padding: 40px 20px; 
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            border-radius: 10px; 
+            overflow: hidden;
+            cursor: pointer; 
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        .card:hover { 
+            transform: scale(1.08); 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            border-color: var(--primary);
+        }
+        .card img { width: 100%; height: 90px; object-fit: contain; background: #fff; padding: 10px; box-sizing: border-box; }
+        .card p { padding: 12px; margin: 0; font-size: 0.9rem; text-align: center; font-weight: 600; }
+
+        /* Footer con tu Instagram */
+        footer {
+            background: #111;
+            padding: 40px 20px;
+            text-align: center;
+            border-top: 1px solid #333;
+            margin-top: 50px;
+        }
+        .instagram-link {
+            color: #ff007a;
+            text-decoration: none;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: opacity 0.3s;
+        }
+        .instagram-link:hover { opacity: 0.7; }
+        .copyright { color: #555; margin-top: 15px; font-size: 0.8rem; }
+
+        /* Scrollbar Personalizado */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>DoloTV</h1>
+    <div class="subtitle">By Larra | Streaming de Alta Calidad</div>
+    <div class="controls">
+        <button class="btn-country" onclick="cargarLista('https://www.m3u.cl/lista/AR.m3u')"><i class="fas fa-tv"></i> Argentina</button>
+        <button class="btn-country" onclick="cargarLista('https://www.tdtchannels.com/lists/tv.m3u8')"><i class="fas fa-globe"></i> TDT Global</button>
+        <button class="btn-country" onclick="cargarLista('https://www.m3u.cl/lista/MX.m3u')"><i class="fas fa-tv"></i> México</button>
+    </div>
+</header>
+
+<div id="player-section">
+    <div class="video-wrapper">
+        <video id="video" controls autoplay></video>
+    </div>
+    <div id="status">Selecciona un canal para comenzar a ver</div>
+</div>
+
+<div class="container" id="lista-canales"></div>
+
+<footer>
+    <a href="https://www.instagram.com/gonza_larra00/" target="_blank" class="instagram-link">
+        <i class="fab fa-instagram fa-2x"></i>
+        <span>@gonza_larra00</span>
+    </a>
+    <div class="copyright">© 2024 DoloTV. Desarrollado por Larra. Todos los derechos reservados.</div>
+</footer>
+
+<script>
+    const video = document.getElementById('video');
+    const listaDiv = document.getElementById('lista-canales');
+    const statusText = document.getElementById('status');
+    const hls = new Hls();
+    const PROXY = 'https://corsproxy.io/?';
+
+    async function cargarLista(urlM3U) {
+        try {
+            listaDiv.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Sintonizando señales...</p>';
+            statusText.innerText = "Conectando con satélite...";
+            
+            const urlFinal = PROXY + encodeURIComponent(urlM3U);
+            const response = await fetch(urlFinal);
+            const data = await response.text();
+            
+            listaDiv.innerHTML = '';
+            const lineas = data.split('\n');
+            let canalActual = null;
+
+            lineas.forEach(linea => {
+                linea = linea.trim();
+                if (linea.startsWith('#EXTINF:')) {
+                    const nombre = linea.split(',')[1] || "Canal TV";
+                    const logoMatch = linea.match(/tvg-logo="([^"]+)"/);
+                    const logo = logoMatch ? logoMatch[1] : 'https://via.placeholder.com/150x80?text=DoloTV';
+                    canalActual = { nombre, logo };
+                } else if (linea.startsWith('http')) {
+                    if (canalActual) {
+                        crearCard(canalActual.nombre, canalActual.logo, linea);
+                        canalActual = null;
+                    }
+                }
+            });
+            statusText.innerText = "Señal lista. Disfruta el contenido.";
+        } catch (e) {
+            statusText.innerText = "Error de sintonización.";
+        }
+    }
+
+    function crearCard(nombre, logo, url) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+            <img src="${logo}" onerror="this.src='https://via.placeholder.com/150x80?text=DoloTV'">
+            <p>${nombre}</p>
+        `;
+        card.onclick = () => {
+            reproducir(url, nombre);
+            window.scrollTo({ top: document.getElementById('player-section').offsetTop - 20, behavior: 'smooth' });
+        };
+        listaDiv.appendChild(card);
+    }
+
+    function reproducir(url, nombre) {
+        statusText.innerHTML = `<i class="fas fa-play"></i> Viendo: <strong>${nombre}</strong>`;
+        
+        if (Hls.isSupported()) {
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+            video.play();
+        }
+    }
+
+    cargarLista('https://www.m3u.cl/lista/AR.m3u');
+</script>
+
+</body>
+</html>
